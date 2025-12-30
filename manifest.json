@@ -1,0 +1,21 @@
+{
+  "name": "Mani Invoice System",
+  "short_name": "InvoiceApp",
+  "description": "Offline Invoice System with PDF Export and PWA Support",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f4f9",
+  "theme_color": "#27ae60",
+  "icons": [
+    {
+      "src": "assets/INVOICE.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/INVOICE.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

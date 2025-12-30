@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Invoice System</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#27ae60">
+
+<!-- Styles -->
+<style>
+:root {
+  --primary: #2c3e50;
+  --accent: #27ae60;
+  --light-bg: #f4f4f9;
+  --white: #fff;
+  --border: #ccc;
+}
+body { font-family:"Poppins",Arial,sans-serif; margin:0; padding:0; background:var(--light-bg); color:var(--primary);}
+.container { max-width:1000px; margin:auto; padding:20px; }
+h1 { text-align:center; color:var(--primary); font-size:1.8rem; margin-bottom:15px; }
+
+.company-header { text-align:center; background:var(--white); padding:20px; border-radius:10px; box-shadow:0 0 5px rgba(0,0,0,0.1); margin-bottom:20px;}
+.company-logo { width:70px; height:70px; object-fit:contain;}
+.company-name { font-size:1.6rem; font-weight:bold; margin:10px 0 5px;}
+.company-address { font-size:0.9rem; color:#555;}
+
+.invoice-header { display:flex; justify-content:space-between; flex-wrap:wrap; background:var(--white); padding:15px; border-radius:10px; box-shadow:0 0 5px rgba(0,0,0,0.1); margin-bottom:20px; gap:10px;}
+.info-box { flex:1 1 300px; min-width:260px;}
+.info-box input, .info-box select { width:100%; padding:10px; margin:6px 0; border-radius:6px; border:1px solid var(--border); font-size:15px;}
+
+.input-section, .action-section { text-align:center; margin-bottom:20px; }
+.input-group { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
+.input-group input, .input-group select, .input-group button { flex:1 1 200px; min-width:150px; padding:10px; border-radius:6px; border:1px solid var(--border); font-size:15px;}
+button { cursor:pointer; font-weight:bold; transition:all 0.3s;}
+.add-btn { background-color: var(--accent); color:white; }
+.add-btn:hover { background-color:#2ecc71; }
+.save-btn { background-color:#2980b9; color:white;}
+.save-btn:hover { background-color:#1f6391;}
+.print-btn { background-color:#8e44ad; color:white;}
+.print-btn:hover { background-color:#6c3483;}
+
+.table-wrapper { width:100%; overflow-x:auto; margin-bottom:15px;}
+.table-wrapper table { width:100%; min-width:600px; border-collapse:collapse; background: var(--white); border-radius:10px; overflow:hidden; table-layout:auto;}
+th, td { border:1px solid #999; padding:10px; text-align:center;}
+th { background:#ecf0f1;}
+.remove-btn { background-color:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:4px;}
+.remove-btn:hover { background-color:#c0392b;}
+#totalAmount { font-weight:bold; font-size:18px; text-align:right; margin-top:15px;}
+#printCustomerInfo { display:none; background:var(--white); padding:10px; border-radius:8px; margin:15px 0;}
+
+/* Responsive */
+@media (max-width:768px){
+.invoice-header { flex-direction:column;}
+.company-header { padding:15px;}
+.company-logo { width:60px; height:60px;}
+.company-name { font-size:1.3rem;}
+.info-box input, .info-box select { font-size:14px;}
+.input-group input, .input-group select, .input-group button { flex:1 1 100%; min-width:100%;}
+table, th, td { font-size:13px;}
+button { width:100%; }
+}
+
+/* Print Styles */
+@media print {
+body { background:white; margin:0; padding:0;}
+.input-section, .action-section, .remove-btn, select, button, input { display:none; }
+.company-header { box-shadow:none; border:none; padding:10px; }
+h1 { color:black; font-size:18pt; margin-bottom:5px;}
+#printCustomerInfo { display:block; margin-bottom:10px; font-size:12pt; line-height:1.2;}
+.invoice-header { display:flex !important; flex-direction:row !important; justify-content:space-between; flex-wrap:nowrap; margin-bottom:5px; padding:5px;}
+.info-box { flex:1 1 auto; margin:0; padding:0;}
+.table-wrapper { overflow:visible;}
+table, th, td { font-size:10pt; border:1px solid #333; padding:4px;}
+#totalAmount { font-size:12pt; margin-top:5px;}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="company-header">
+    <img src="assets/INVOICE.png" alt="Company Logo" class="company-logo" />
+    <div class="company-name">Sarmimani Pvt. Ltd.</div>
+    <div class="company-address">Dharan, Nepal • +977-9860412308 • tamangmani012@gmail.com</div>
+  </div>
+
+  <h1>SM Invoice System</h1>
+
+  <div class="invoice-header">
+    <div class="info-box">
+      <h3>Customer Details</h3>
+      <select id="customerSelect"><option value="">-- Select Customer --</option></select>
+      <input type="text" id="customerName" placeholder="New Customer Name" />
+      <input type="text" id="customerAddress" placeholder="New Customer Address" />
+      <button id="addCustomerBtn" class="add-btn">+ Add New Customer</button>
+    </div>
+    <div class="info-box">
+      <h3>Invoice Details</h3>
+      <p><strong>Invoice No:</strong> <span id="invoiceNumber"></span></p>
+      <p><strong>Date:</strong> <span id="invoiceDate"></span></p>
+    </div>
+  </div>
+
+  <div id="printCustomerInfo">
+    <strong>Customer Name:</strong> <span id="printCustomerName"></span><br/>
+    <strong>Customer Address:</strong> <span id="printCustomerAddress"></span>
+  </div>
+
+  <div class="input-section">
+    <div class="input-group">
+      <select id="itemSelect"><option value="">-- Select Item --</option></select>
+      <input type="number" id="quantity" placeholder="Quantity" />
+      <input type="number" id="price" placeholder="Price" />
+      <button id="addItem" class="add-btn">Add Item</button>
+    </div>
+    <div class="input-group">
+      <input type="text" id="newItemName" placeholder="New Item Name" />
+      <input type="number" id="newItemPrice" placeholder="New Item Price" />
+      <button id="addNewItem" class="add-btn">+ Add Item to Catalog</button>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th><th>Quantity</th><th>Price ($)</th><th>Total ($)</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="invoiceItems"></tbody>
+    </table>
+  </div>
+
+  <div id="totalAmount">Total: $0</div>
+
+  <div class="action-section">
+    <button id="saveInvoice" class="save-btn">💾 Save Invoice (JSON)</button>
+    <button id="printInvoice" class="print-btn">🖨️ Print Invoice</button>
+    <button id="downloadPDF" class="save-btn" style="background:#16a085;">📄 Download PDF</button>
+    <button id="resetApp" class="save-btn" style="background:#e67e22;">♻️ Reset App Data</button>
+  </div>
+</div>
+
+<!-- jsPDF and AutoTable -->
+<script src="js/jspdf.umd.min.js"></script>
+<script src="js/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+// ===== Offline-first data =====
+let defaultCustomers=[{name:"John Doe",address:"Kathmandu, Nepal"}];
+let defaultItems=[{name:"Laptop",price:500},{name:"Keyboard",price:25}];
+let customers=JSON.parse(localStorage.getItem("customers"))||defaultCustomers;
+let items=JSON.parse(localStorage.getItem("items"))||defaultItems;
+let invoiceItemsList=JSON.parse(localStorage.getItem("invoiceItemsList"))||[];
+let grandTotal=parseFloat(localStorage.getItem("grandTotal"))||0;
+
+// ===== Selectors =====
+const customerSelect=document.getElementById("customerSelect");
+const customerName=document.getElementById("customerName");
+const customerAddress=document.getElementById("customerAddress");
+const addCustomerBtn=document.getElementById("addCustomerBtn");
+const itemSelect=document.getElementById("itemSelect");
+const quantityInput=document.getElementById("quantity");
+const priceInput=document.getElementById("price");
+const addItemBtn=document.getElementById("addItem");
+const addNewItemBtn=document.getElementById("addNewItem");
+const newItemName=document.getElementById("newItemName");
+const newItemPrice=document.getElementById("newItemPrice");
+const invoiceNumber=document.getElementById("invoiceNumber");
+const invoiceDate=document.getElementById("invoiceDate");
+const invoiceItemsTable=document.getElementById("invoiceItems");
+const totalAmountDisplay=document.getElementById("totalAmount");
+const saveInvoiceBtn=document.getElementById("saveInvoice");
+const printInvoiceBtn=document.getElementById("printInvoice");
+const downloadPDFBtn=document.getElementById("downloadPDF");
+const printCustomerName=document.getElementById("printCustomerName");
+const printCustomerAddress=document.getElementById("printCustomerAddress");
+const resetAppBtn=document.getElementById("resetApp");
+
+// ===== Invoice details =====
+function newInvoiceDetails(){
+  invoiceNumber.textContent="INV-"+Math.floor(1000+Math.random()*9000);
+  invoiceDate.textContent=new Date().toLocaleDateString();
+}
+newInvoiceDetails();
+
+// ===== Render dropdowns =====
+function renderCustomers(){
+  customerSelect.innerHTML='<option value="">-- Select Customer --</option>';
+  customers.forEach((c,i)=>{
+    const opt=document.createElement("option");
+    opt.value=i; opt.textContent=c.name;
+    customerSelect.appendChild(opt);
+  });
+}
+function renderItems(){
+  itemSelect.innerHTML='<option value="">-- Select Item --</option>';
+  items.forEach((it,i)=>{
+    const opt=document.createElement("option");
+    opt.value=i; opt.textContent=it.name;
+    itemSelect.appendChild(opt);
+  });
+}
+
+// ===== Update print info =====
+function updatePrintInfo(){
+  printCustomerName.textContent=customerName.value||"(Not specified)";
+  printCustomerAddress.textContent=customerAddress.value||"(Not specified)";
+}
+
+// ===== Load invoice items =====
+function loadInvoiceItems(){
+  invoiceItemsTable.innerHTML=""; grandTotal=0;
+  invoiceItemsList.forEach(item=>{
+    grandTotal+=item.total;
+    const row=document.createElement("tr");
+    row.innerHTML=`<td>${item.item}</td><td>${item.quantity}</td><td>${item.price.toFixed(2)}</td><td>${item.total.toFixed(2)}</td><td><button class="remove-btn">Remove</button></td>`;
+    invoiceItemsTable.appendChild(row);
+    row.querySelector(".remove-btn").addEventListener("click",()=>{
+      grandTotal-=item.total; invoiceItemsList=invoiceItemsList.filter(i=>i!==item); saveBackup(); updateTotal(); row.remove();
+    });
+  });
+  updateTotal();
+}
+function updateTotal(){ totalAmountDisplay.textContent=`Total: $${grandTotal.toFixed(2)}`; }
+
+// ===== Initialize =====
+renderCustomers(); renderItems(); loadInvoiceItems(); updatePrintInfo();
+
+// ===== Customer auto-fill =====
+customerSelect.addEventListener("change",()=>{
+  const idx=customerSelect.value;
+  if(idx!==""){ customerName.value=customers[idx].name; customerAddress.value=customers[idx].address; } 
+  else{ customerName.value=""; customerAddress.value=""; }
+  updatePrintInfo();
+});
+
+// ===== Add customer =====
+addCustomerBtn.addEventListener("click",()=>{
+  const name=customerName.value.trim(); const address=customerAddress.value.trim();
+  if(!name||!address) return alert("Enter both name & address.");
+  customers.push({name,address}); localStorage.setItem("customers",JSON.stringify(customers));
+  renderCustomers(); customerSelect.value=customers.length-1; updatePrintInfo(); saveBackup();
+  alert("✅ New customer added and selected!");
+});
+
+// ===== Item auto-fill =====
+itemSelect.addEventListener("change",()=>{ const idx=itemSelect.value; priceInput.value=(idx!=="")?items[idx].price:""; });
+
+// ===== Add new item =====
+addNewItemBtn.addEventListener("click",()=>{
+  const name=newItemName.value.trim(); const price=parseFloat(newItemPrice.value);
+  if(!name||isNaN(price)) return alert("Enter valid item name and price.");
+  items.push({name,price}); localStorage.setItem("items",JSON.stringify(items));
+  renderItems(); itemSelect.value=items.length-1; priceInput.value=price;
+  newItemName.value=""; newItemPrice.value=""; saveBackup();
+  alert("✅ New item added and selected!");
+});
+
+// ===== Add item to invoice =====
+addItemBtn.addEventListener("click",()=>{
+  const idx=itemSelect.value; const itemName=(idx!=="")?items[idx].name:"";
+  const quantity=parseInt(quantityInput.value); const price=parseFloat(priceInput.value);
+  if(!itemName||isNaN(quantity)||isNaN(price)) return alert("Enter valid item details.");
+  const total=quantity*price; grandTotal+=total; const invoiceItem={item:itemName,quantity,price,total};
+  invoiceItemsList.push(invoiceItem); saveBackup();
+  const row=document.createElement("tr");
+  row.innerHTML=`<td>${itemName}</td><td>${quantity}</td><td>${price.toFixed(2)}</td><td>${total.toFixed(2)}</td><td><button class="remove-btn">Remove</button></td>`;
+  invoiceItemsTable.appendChild(row);
+  row.querySelector(".remove-btn").addEventListener("click",()=>{
+    grandTotal-=total; invoiceItemsList=invoiceItemsList.filter(i=>i!==invoiceItem); saveBackup(); updateTotal(); row.remove();
+  });
+  updateTotal(); quantityInput.value=""; priceInput.value="";
+});
+
+// ===== Save invoice as JSON =====
+saveInvoiceBtn.addEventListener("click",()=>{
+  if(!customerName.value) return alert("Select a customer first.");
+  const invoiceData={invoiceNumber:invoiceNumber.textContent,date:invoiceDate.textContent,customer:{name:customerName.value,address:customerAddress.value},items:invoiceItemsList,grandTotal};
+  const blob=new Blob([JSON.stringify(invoiceData,null,2)],{type:"application/json"});
+  const link=document.createElement('a'); link.href=URL.createObjectURL(blob); link.download=`${invoiceNumber.textContent}.json`; link.click();
+  alert("✅ Invoice saved!");
+  invoiceItemsList=[]; grandTotal=0; invoiceItemsTable.innerHTML=""; updateTotal();
+  customerSelect.value=""; customerName.value=""; customerAddress.value="";
+  itemSelect.value=""; quantityInput.value=""; priceInput.value="";
+  newItemName.value=""; newItemPrice.value="";
+  newInvoiceDetails(); updatePrintInfo(); saveBackup();
+});
+
+// ===== Print invoice =====
+printInvoiceBtn.addEventListener("click",()=>{ if(!customerName.value) return alert("Select a customer first."); updatePrintInfo(); window.print(); });
+
+// ===== Download PDF offline with table =====
+downloadPDFBtn.addEventListener("click",()=>{
+  if(!customerName.value) return alert("Select a customer first.");
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
+
+  pdf.setFontSize(18); pdf.text("Smart Invoice System",14,20);
+  pdf.setFontSize(12);
+  pdf.text(`Invoice No: ${invoiceNumber.textContent}`,14,30);
+  pdf.text(`Date: ${invoiceDate.textContent}`,14,36);
+  pdf.text(`Customer Name: ${customerName.value}`,14,46);
+  pdf.text(`Customer Address: ${customerAddress.value}`,14,52);
+
+  const tableColumn=["Item","Quantity","Price ($)","Total ($)"];
+  const tableRows=[];
+  invoiceItemsList.forEach(item=>{ tableRows.push([item.item,item.quantity,item.price.toFixed(2),item.total.toFixed(2)]); });
+
+  pdf.autoTable({ startY:60, head:[tableColumn], body:tableRows, theme:'grid', headStyles:{fillColor:[39,174,96]} });
+  pdf.text(`Grand Total: $${grandTotal.toFixed(2)}`,14,pdf.lastAutoTable.finalY+10);
+  pdf.save(`${invoiceNumber.textContent}.pdf`);
+});
+
+// ===== Backup & Reset =====
+function saveBackup(){
+  localStorage.setItem("customers",JSON.stringify(customers));
+  localStorage.setItem("items",JSON.stringify(items));
+  localStorage.setItem("invoiceItemsList",JSON.stringify(invoiceItemsList));
+  localStorage.setItem("grandTotal",grandTotal);
+}
+resetAppBtn.addEventListener("click",()=>{ if(confirm("⚠️ This will erase all data!")){ localStorage.clear(); location.reload(); } });
+
+// ===== Service Worker =====
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js")
+    .then(() => console.log("Service Worker Registered"))
+    .catch(err => console.log("SW Error:", err));
+}
+</script>
+</body>
+</html>
